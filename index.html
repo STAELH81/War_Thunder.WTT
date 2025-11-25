@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patch Note Auto</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Patch Note Generator - Mode Automatique</h1>
+  </header>
+
+  <main>
+    <section id="auto-section">
+      <h2>Génération automatique</h2>
+      <label>Ancienne version : <input type="file" id="old-json" accept=".json"></label><br>
+      <label>Nouvelle version : <input type="file" id="new-json" accept=".json"></label><br>
+      <button id="compare-btn">Générer automatiquement</button>
+    </section>
+
+    <pre id="output"></pre>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
