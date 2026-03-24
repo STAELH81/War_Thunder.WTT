@@ -1,139 +1,121 @@
-
 document.addEventListener('DOMContentLoaded', () => {
+  const btnGenerate = document.getElementById('generate-btn');
+  const btnCopy = document.getElementById('copy-btn');
   const output = document.getElementById('output');
 
-  document.getElementById('compare-btn').addEventListener('click', async () => {
+  btnGenerate.addEventListener('click', async () => {
     const oldFile = document.getElementById('old-json').files[0];
     const newFile = document.getElementById('new-json').files[0];
 
     if (!oldFile || !newFile) {
-      alert('Merci de sélectionner deux fichiers .json.');
+      alert('⚠️ Tu dois sélectionner les deux fichiers JSON.');
       return;
     }
 
-    const [oldText, newText] = await Promise.all([
-      oldFile.text(),
-      newFile.text()
-    ]);
-
     try {
-      const oldData = JSON.parse(oldText);
-      const newData = JSON.parse(newText);
+      // Lecture des fichiers
+      const oldData = JSON.parse(await oldFile.text());
+      const newData = JSON.parse(await newFile.text());
 
-      const oldVehicles = Object.fromEntries(oldData.vehicleList.map(v => [v.id, v]));
-      const newVehicles = Object.fromEntries(newData.vehicleList.map(v => [v.id, v]));
+      // Création de cartes (Map) pour trouver les véhicules instantanément
+      const oldVehicles = new Map(oldData.vehicleList.map(v => [v.id, v]));
+      const newVehicles = new Map(newData.vehicleList.map(v => [v.id, v]));
 
-      const added = [];
-      const removed = [];
-      const brChanges = [];
-      const typeChanges = [];
+      const changes = { added: [], removed: [], br: [], type: [] };
 
-      for (const [id, newV] of Object.entries(newVehicles)) {
-        if (!oldVehicles[id]) {
-          added.push(newV);
+      // 1. Chercher les ajouts et les modifications
+      for (const [id, newV] of newVehicles) {
+        if (!oldVehicles.has(id)) {
+          changes.added.push(newV);
         } else {
-          const oldV = oldVehicles[id];
-          if (newV.br !== oldV.br) {
-            brChanges.push({ name: newV.name, old_br: oldV.br, new_br: newV.br });
-          }
-          if (newV.type !== oldV.type) {
-            typeChanges.push({ name: newV.name, old_type: oldV.type, new_type: newV.type });
-          }
+          const oldV = oldVehicles.get(id);
+          if (newV.br !== oldV.br) changes.br.push({ name: newV.name, old: oldV.br, new: newV.br });
+          if (newV.type !== oldV.type) changes.type.push({ name: newV.name, old: oldV.type, new: newV.type });
         }
       }
 
-      for (const [id, oldV] of Object.entries(oldVehicles)) {
-        if (!newVehicles[id]) {
-          removed.push(oldV);
-        }
+      // 2. Chercher les suppressions
+      for (const [id, oldV] of oldVehicles) {
+        if (!newVehicles.has(id)) changes.removed.push(oldV);
       }
 
-      const updateName = prompt("📝 Entrez le nom de la mise à jour :", "");
-      if (!updateName || updateName.trim() === "") {
-        alert("⚠️ Nom de mise à jour requis !");
-        return;
-      }
-
-      let alertPrix = [];
+      // 3. Construction du texte
+      const updateName = prompt("📝 Nom de la mise à jour ?", "Version 1.1") || "Nouvelle Version";
       let result = `📌 Patch Note – ${updateName}\n\n`;
 
-      // DÉTECTION DES PACKS PREMIUM PAR parentId
-      const packMap = {};
-      const singles = [];
-
-      for (const v of added) {
-        if (v.type === "premium" && v.connection === "folder" && v.parentId) {
-          if (!packMap[v.parentId]) packMap[v.parentId] = [];
-          packMap[v.parentId].push(v);
-        } else {
-          singles.push(v);
-        }
-      }
-
-      for (const [folderId, group] of Object.entries(packMap)) {
-        if (group.length > 1) {
-          const packName = prompt(`🎁 Nom du pack premium contenant ${group.length} véhicules ?`, "Nom du pack");
-          const packPrice = prompt("💰 Prix du pack premium ?", "");
-          result += `🎁 **Pack Premium : ${packName} (${packPrice} GE)**\n`;
-          for (const v of group) {
-            result += `- ${v.name} (BR ${v.br})\n`;
-          }
-          result += '\n';
-        } else {
-          singles.push(...group); // Trop petit pour être un pack
-        }
-      }
-
-      if (singles.length) {
+      // Traitement des Nouveautés
+      if (changes.added.length > 0) {
         result += '🚗 **Nouveaux véhicules :**\n';
-        for (const v of singles) {
-          if (v.type !== 'researchable' && v.type !== 'Réserve') {
-            if (!v.price) {
-              let prix = prompt(`💰 Prix pour ${v.name} (${v.type}) ?`, "");
-              if (!prix || prix.trim() === "") {
-                alertPrix.push(v.name);
-              } else {
-                v.price = prix.trim();
-              }
-            }
+        
+        const packs = {};
+        const singles = [];
+
+        // Trier les véhicules par "follow"
+        changes.added.forEach(v => {
+          if (v.type === "premium" && v.follow) {
+            if (!packs[v.follow]) packs[v.follow] = [];
+            packs[v.follow].push(v);
+          } else {
+            singles.push(v);
           }
-          result += `- ${v.name} (${v.type}) – BR ${v.br}${v.price ? ` (${v.price} GE)` : ''}\n`;
+        });
+
+        // Ajouter les packs au texte
+        for (const [parentId, group] of Object.entries(packs)) {
+           const packName = prompt(`🎁 Nom du Pack Premium détecté ?`, "Nom du Pack");
+           const packPrice = prompt(`💰 Prix global du Pack (GE) ?`, "");
+           result += `\n🎁 **Pack Premium : ${packName} ${packPrice ? `(${packPrice} GE)` : ''}**\n`;
+           group.forEach(v => result += `  - ${v.name} (BR ${v.br})\n`);
         }
+        if (Object.keys(packs).length > 0) result += '\n';
+
+        // Ajouter les véhicules seuls
+        singles.forEach(v => {
+          let priceStr = "";
+          if (["premium", "squadron", "event"].includes(v.type)) {
+            const price = prompt(`💰 Prix pour ${v.name} (${v.type}) ?`, "");
+            if (price) priceStr = ` (${price} GE)`;
+          }
+          result += `- ${v.name} (${v.type}) – BR ${v.br}${priceStr}\n`;
+        });
         result += '\n';
       }
 
-      if (removed.length) {
+      // Traitement des Suppressions
+      if (changes.removed.length > 0) {
         result += '❌ **Véhicules supprimés :**\n';
-        for (const v of removed) {
-          result += `- ${v.name} (BR ${v.br}, ${v.type})\n`;
-        }
+        changes.removed.forEach(v => result += `- ${v.name} (BR ${v.br}, ${v.type})\n`);
         result += '\n';
       }
 
-      if (brChanges.length) {
+      // Traitement des Changements BR
+      if (changes.br.length > 0) {
         result += '🔧 **Changements de BR :**\n';
-        for (const c of brChanges) {
-          result += `- ${c.name} : ${c.old_br} → ${c.new_br}\n`;
-        }
+        changes.br.forEach(c => result += `- ${c.name} : ${c.old} → ${c.new}\n`);
         result += '\n';
       }
 
-      if (typeChanges.length) {
+      // Traitement des Changements de Type
+      if (changes.type.length > 0) {
         result += '🔄 **Changements de statut :**\n';
-        for (const c of typeChanges) {
-          result += `- ${c.name} : ${c.old_type} → ${c.new_type}\n`;
-        }
+        changes.type.forEach(c => result += `- ${c.name} : ${c.old} → ${c.new}\n`);
         result += '\n';
       }
 
-      if (alertPrix.length > 0) {
-        alert("⚠️ Tu dois renseigner le prix de ces véhicules :\n" + alertPrix.join("\n"));
-        return;
-      }
-
+      // Afficher le résultat
       output.textContent = result.trim();
-    } catch (e) {
-      output.textContent = '❌ Erreur lors de l analyse des fichiers JSON.';
+
+    } catch (error) {
+      console.error(error);
+      output.textContent = "❌ Erreur : Impossible de lire les fichiers. Sont-ils bien des fichiers JSON valides ?";
     }
+  });
+
+  // Fonction pour copier le texte
+  btnCopy.addEventListener('click', () => {
+    navigator.clipboard.writeText(output.textContent).then(() => {
+      btnCopy.textContent = "✅ Copié !";
+      setTimeout(() => btnCopy.textContent = "📋 Copier", 2000); // Remet le texte normal après 2 secondes
+    });
   });
 });

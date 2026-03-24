@@ -3,25 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Patch Note Auto</title>
+  <title>Patch Note Generator V2</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Patch Note Generator - Mode Automatique</h1>
-  </header>
+  <div class="container">
+    <header>
+      <h1>🛠️ Patch Note Generator V2</h1>
+      <p>Outil d'analyse de Tech Tree</p>
+    </header>
 
-  <main>
-    <section id="auto-section">
-      <h2>Génération automatique</h2>
-      <label>Ancienne version : <input type="file" id="old-json" accept=".json"></label><br>
-      <label>Nouvelle version : <input type="file" id="new-json" accept=".json"></label><br>
-      <button id="compare-btn">Générer automatiquement</button>
-    </section>
+    <main>
+      <section class="controls">
+        <div class="file-inputs">
+          <label>📁 Ancienne version : <input type="file" id="old-json" accept=".json"></label>
+          <label>📁 Nouvelle version : <input type="file" id="new-json" accept=".json"></label>
+        </div>
+        <button id="generate-btn">Générer le Patch Note</button>
+      </section>
 
-    <pre id="output"></pre>
-  </main>
-
+      <section class="result-section">
+        <div class="result-header">
+          <h2>Résultat :</h2>
+          <button id="copy-btn">📋 Copier</button>
+        </div>
+        <pre id="output">En attente des fichiers...</pre>
+      </section>
+    </main>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
