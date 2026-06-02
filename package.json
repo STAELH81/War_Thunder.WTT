@@ -1,0 +1,8 @@
+{
+  "name": "war-thunder-wtt-patch-notes",
+  "private": true,
+  "description": "Générateur de patch notes à partir des exports JSON War Thunder Wiki Tools",
+  "scripts": {
+    "start": "npx --yes serve -l 8080"
+  }
+}
