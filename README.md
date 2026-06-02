@@ -8,11 +8,22 @@ Petit outil web pour générer des patch notes à partir des exports JSON de [Wa
 
 ## Démarrage rapide (Windows)
 
-**Double-clique sur `start.bat`.**
+### Au quotidien
+**Double-clique sur `start.bat`** — le navigateur s'ouvre sur [http://localhost:8080](http://localhost:8080). Ferme la fenêtre noire pour arrêter.
 
-Le navigateur s'ouvre tout seul sur [http://localhost:8080](http://localhost:8080). Pour arrêter : ferme la fenêtre noire du terminal.
+### Barre des tâches (une seule fois)
 
-Tu peux épingler `start.bat` sur le bureau ou la barre des tâches si tu veux un raccourci permanent.
+1. **Double-clique sur `creer-raccourci.bat`**
+2. Un raccourci **WTT Patch Notes** apparaît sur le **Bureau** (avec ton icône `WTT.png`)
+3. **Clic droit** sur ce raccourci → **Épingler à la barre des tâches**
+
+Si « Épingler à la barre des tâches » n'apparaît pas :
+1. Double-clique le raccourci (l'outil se lance)
+2. **Clic droit** sur l'icône **WTT** dans la barre des tâches
+3. **Épingler à la barre des tâches**
+4. Tu peux ensuite retirer l'icône cmd temporaire si une deuxième s'est ajoutée
+
+> Windows refuse d'épingler un `.bat` directement — d'où le raccourci avec icône custom.
 
 ### Prérequis
 
