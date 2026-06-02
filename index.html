@@ -3,34 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Patch Note Generator V2</title>
-  <link rel="stylesheet" href="style.css">
+  <title>WTT Patch Notes — Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    (function () {
+      var stored = localStorage.getItem('wtt-theme');
+      var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🛠️ Patch Note Generator V2</h1>
-      <p>Outil d'analyse de Tech Tree</p>
+  <div class="app">
+    <header class="app-header">
+      <div class="header-row">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1>WTT Patch Notes</h1>
+          <p class="subtitle">Comparaison + nouvelles branches en une seule génération</p>
+        </div>
+      </div>
+      <div class="header-actions">
+      <button type="button" class="theme-toggle" id="btn-theme" aria-label="Passer en mode clair" title="Mode clair">
+        <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <select class="locale-select" id="locale-select" aria-label="Langue de sortie" title="Langue">
+        <option value="fr">FR</option>
+        <option value="en">EN</option>
+      </select>
+      </div>
+      </div>
     </header>
 
-    <main>
-      <section class="controls">
-        <div class="file-inputs">
-          <label>📁 Ancienne version (Tous les pays) : <input type="file" id="old-json" accept=".json" multiple></label>
-          <label>📁 Nouvelle version (Tous les pays) : <input type="file" id="new-json" accept=".json" multiple></label>
+    <main class="main">
+      <section class="workflow-section">
+        <div class="section-head">
+          <h2>⇄ Mises à jour</h2>
+          <p>Compare l'ancien et le nouveau JSON par nation (<code>usa.json</code> ↔ <code>usa.json</code>).</p>
         </div>
-        <button id="generate-btn">Générer le Patch Note Global</button>
+        <div class="upload-grid">
+          <div class="upload-card">
+            <h3>Ancienne version</h3>
+            <div class="dropzone" data-zone="old" tabindex="0">
+              <input type="file" id="input-old" accept=".json,application/json" multiple hidden>
+              <div class="dropzone-inner">
+                <span class="dropzone-icon" aria-hidden="true">📂</span>
+                <p>Glisse tes JSON ici ou <button type="button" class="link-btn" data-browse="old">parcourir</button></p>
+                <span class="dropzone-meta">Optionnel si tu n'as que des nouvelles branches</span>
+              </div>
+            </div>
+            <ul class="file-list" id="list-old" aria-live="polite"></ul>
+          </div>
+          <div class="upload-card">
+            <h3>Nouvelle version</h3>
+            <div class="dropzone" data-zone="new" tabindex="0">
+              <input type="file" id="input-new" accept=".json,application/json" multiple hidden>
+              <div class="dropzone-inner">
+                <span class="dropzone-icon" aria-hidden="true">📂</span>
+                <p>Glisse tes JSON ici ou <button type="button" class="link-btn" data-browse="new">parcourir</button></p>
+                <span class="dropzone-meta">Mêmes noms que l'ancien</span>
+              </div>
+            </div>
+            <ul class="file-list" id="list-new" aria-live="polite"></ul>
+          </div>
+        </div>
+        <div class="pairing-status" id="pairing-status" hidden></div>
       </section>
 
-      <section class="result-section">
-        <div class="result-header">
-          <h2>Résultat :</h2>
-          <button id="copy-btn">📋 Copier</button>
+      <section class="workflow-section workflow-section--branch">
+        <div class="section-head">
+          <h2>＋ Nouvelle(s) branche(s)</h2>
+          <p>Pays sans ancien JSON — tout l'arbre est documenté. <strong>Cumulable</strong> avec la comparaison ci-dessus.</p>
         </div>
-        <pre id="output">En attente des fichiers...</pre>
+        <div class="upload-single">
+          <div class="upload-card upload-card--wide">
+            <h3>Arbre(s) du nouveau pays</h3>
+            <div class="dropzone" data-zone="branch" tabindex="0">
+              <input type="file" id="input-branch" accept=".json,application/json" multiple hidden>
+              <div class="dropzone-inner">
+                <span class="dropzone-icon" aria-hidden="true">🌐</span>
+                <p>Glisse tes JSON ici ou <button type="button" class="link-btn" data-browse="branch">parcourir</button></p>
+                <span class="dropzone-meta">Ex. <code>suede.json</code>, <code>benelux.json</code></span>
+              </div>
+            </div>
+            <ul class="file-list" id="list-branch" aria-live="polite"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="patch-meta">
+        <div class="patch-meta-field">
+          <label for="input-patch-version">Version</label>
+          <input type="text" id="input-patch-version" placeholder="3.0.11" autocomplete="off">
+        </div>
+        <div class="patch-meta-field patch-meta-field--wide">
+          <label for="input-patch-title">Titre</label>
+          <input type="text" id="input-patch-title" placeholder="Last update before 3.1" autocomplete="off">
+        </div>
+      </section>
+
+      <div class="action-bar">
+        <button type="button" class="btn btn-primary" id="btn-generate">
+          <span class="btn-label">Générer le patch note</span>
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-clear">Réinitialiser</button>
+        <span class="status-pill" id="status-pill" aria-live="polite"></span>
+      </div>
+
+      <div class="summary-bar" id="summary-bar" hidden aria-live="polite"></div>
+
+      <section class="result-card">
+        <div class="result-header">
+          <div class="result-header-left">
+            <h2>Résultat</h2>
+            <div class="result-tabs" role="tablist">
+              <button type="button" class="result-tab active" id="tab-text" role="tab" aria-selected="true">Texte</button>
+              <button type="button" class="result-tab" id="tab-preview" role="tab" aria-selected="false">Aperçu Wix</button>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="btn btn-sm" id="btn-copy" disabled>Copier</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="btn-download" disabled>Télécharger</button>
+          </div>
+        </div>
+        <pre id="output" class="output">En attente des fichiers…</pre>
+        <div id="output-preview" class="output-preview empty" hidden></div>
       </section>
     </main>
+
+    <footer class="app-footer">
+      <span>Compatible exports WTT · Packs premium détectés en chaîne (<code>follow</code>)</span>
+    </footer>
   </div>
-  <script src="script.js"></script>
+
+  <dialog id="dialog-pricing" class="pricing-dialog">
+    <form method="dialog" id="form-pricing">
+      <header class="dialog-header">
+        <h2>Tarification</h2>
+        <p class="dialog-sub">Ajuste les prix GE avant de générer le texte final. Les packs regroupent les véhicules liés en chaîne dans l'arbre.</p>
+      </header>
+      <div class="dialog-body" id="pricing-fields"></div>
+      <footer class="dialog-footer">
+        <button type="button" class="btn btn-ghost" id="btn-pricing-cancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Générer le texte</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
